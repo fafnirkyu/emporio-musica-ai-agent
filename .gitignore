@@ -1,0 +1,23 @@
+# Environment and secrets
+.env
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Tests and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Generated databases
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
