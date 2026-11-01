@@ -328,11 +328,11 @@ def product_availability(status, stock_quantity):
 
 def discounted_price(price_cents, discount_percent):
     price = Decimal(price_cents)
-    multiplier = Decimal(100 - discount_percent) / Decimal(100)
+    multiplier = Decimal(100 - discount_percent) / 100
 
     return int(
         (price * multiplier).quantize(
-            Decimal(1),
+            1,
             rounding=ROUND_HALF_UP,
         )
     )

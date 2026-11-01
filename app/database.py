@@ -1,7 +1,7 @@
 import json
 import sqlite3
 from datetime import date
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import InvalidOperation, ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 import pandas as pd
@@ -232,14 +232,22 @@ def convert_to_int(frame, columns):
 
 
 def money_to_cents(value):
-    amount = Decimal(value)
+    try:
+        amount = Decimal(str(value))
+    except InvalidOperation as error:
+        raise ValueError(
+            "Money values must be valid numbers"
+        ) from error
+
+    if not amount.is_finite() or amount < 0:
+        raise ValueError(
+            "Money values must be finite and non-negative"
+        )
+
     cents = (amount * 100).quantize(
         Decimal("1"),
         rounding=ROUND_HALF_UP,
     )
-
-    if cents < 0:
-        raise ValueError("Money values cannot be negative")
 
     return int(cents)
 
