@@ -9,6 +9,7 @@ from app.database import money_to_cents
 
 
 DEFAULT_MODEL = "gemini-2.5-flash"
+MAX_TOOL_ROUNDS = 3
 
 SYSTEM_INSTRUCTION = """
 Você é Amy, a assistente virtual do Empório da Música.
@@ -264,3 +265,84 @@ class ToolDispatcher:
 
     def search_store_policies(self, query):
         return self.policy_retriever.search(query)
+
+
+class StoreAgent:
+    def __init__(
+        self,
+        client,
+        model,
+        dispatcher,
+    ):
+        self.dispatcher = dispatcher
+        self.chat = client.chats.create(
+            model=model,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_INSTRUCTION,
+                tools=STORE_TOOLS,
+                temperature=0.2,
+                automatic_function_calling=(
+                    types.AutomaticFunctionCallingConfig(
+                        disable=True
+                    )
+                ),
+            ),
+        )
+
+    def ask(self, message):
+        message = message.strip()
+
+        if not message:
+            raise ValueError("Message cannot be empty.")
+
+        response = self.chat.send_message(message)
+
+        for _ in range(MAX_TOOL_ROUNDS):
+            function_calls = response.function_calls or []
+
+            if not function_calls:
+                return get_response_text(response)
+
+            tool_responses = []
+
+            for function_call in function_calls:
+                result = self.dispatcher.execute(
+                    function_call.name,
+                    function_call.args,
+                )
+
+                if "error" in result:
+                    function_response = result
+                else:
+                    function_response = {
+                        "result": result
+                    }
+
+                tool_responses.append(
+                    types.Part.from_function_response(
+                        name=function_call.name,
+                        response=function_response,
+                    )
+                )
+
+            response = self.chat.send_message(
+                tool_responses
+            )
+
+        if response.function_calls:
+            raise RuntimeError(
+                "The agent exceeded the tool call limit."
+            )
+
+        return get_response_text(response)
+
+
+def get_response_text(response):
+    text = (response.text or "").strip()
+
+    if not text:
+        raise RuntimeError(
+            "The model returned an empty response."
+        )
+
+    return text

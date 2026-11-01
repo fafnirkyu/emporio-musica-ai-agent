@@ -1,6 +1,14 @@
+from types import SimpleNamespace
+from unittest.mock import Mock
+
 import pytest
 
-from app.agent import TOOL_DECLARATIONS, ToolDispatcher
+from app.agent import (
+    MAX_TOOL_ROUNDS,
+    TOOL_DECLARATIONS,
+    StoreAgent,
+    ToolDispatcher,
+)
 from app.database import create_database
 from app.policy import PolicyRetriever
 
@@ -144,3 +152,145 @@ def test_returns_controlled_argument_error(dispatcher):
     assert result == {
         "error": "Money values must be valid numbers"
     }
+
+
+def model_response(text=None, function_calls=None):
+    return SimpleNamespace(
+        text=text,
+        function_calls=function_calls or [],
+    )
+
+
+def create_fake_agent(responses, dispatcher):
+    chat = Mock()
+    chat.send_message.side_effect = responses
+
+    client = Mock()
+    client.chats.create.return_value = chat
+
+    agent = StoreAgent(
+        client=client,
+        model="test-model",
+        dispatcher=dispatcher,
+    )
+
+    return agent, chat
+
+
+
+def test_returns_model_answer_without_tool_call(dispatcher):
+    agent, chat = create_fake_agent(
+        [
+            model_response(
+                text="Olá! Como posso ajudar?"
+            )
+        ],
+        dispatcher,
+    )
+
+    answer = agent.ask("Olá")
+
+    assert answer == "Olá! Como posso ajudar?"
+    assert chat.send_message.call_count == 1
+    assert chat.send_message.call_args.args[0] == "Olá"
+
+
+def test_executes_model_tool_call(dispatcher):
+    function_call = SimpleNamespace(
+        name="search_products",
+        args={
+            "query": "violão",
+            "limit": 2,
+        },
+    )
+
+    agent, chat = create_fake_agent(
+        [
+            model_response(
+                function_calls=[function_call]
+            ),
+            model_response(
+                text="Encontrei dois violões."
+            ),
+        ],
+        dispatcher,
+    )
+
+    answer = agent.ask("Quero ver dois violões")
+
+    assert answer == "Encontrei dois violões."
+    assert chat.send_message.call_count == 2
+
+    tool_parts = chat.send_message.call_args_list[
+        1
+    ].args[0]
+
+    function_response = tool_parts[
+        0
+    ].function_response
+
+    assert function_response.name == "search_products"
+    assert function_response.response[
+        "result"
+    ]["count"] == 2
+
+
+def test_rejects_empty_user_message(dispatcher):
+    agent, chat = create_fake_agent(
+        [],
+        dispatcher,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Message cannot be empty",
+    ):
+        agent.ask("   ")
+
+    chat.send_message.assert_not_called()
+
+
+def test_rejects_empty_model_response(dispatcher):
+    agent, _ = create_fake_agent(
+        [
+            model_response(text="   ")
+        ],
+        dispatcher,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="model returned an empty response",
+    ):
+        agent.ask("Olá")
+
+
+def test_stops_repeated_tool_calls(dispatcher):
+    function_call = SimpleNamespace(
+        name="search_products",
+        args={
+            "query": "violão",
+        },
+    )
+
+    responses = [
+        model_response(
+            function_calls=[function_call]
+        )
+        for _ in range(MAX_TOOL_ROUNDS + 1)
+    ]
+
+    agent, chat = create_fake_agent(
+        responses,
+        dispatcher,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="exceeded the tool call limit",
+    ):
+        agent.ask("Procure um violão")
+
+    assert chat.send_message.call_count == (
+        MAX_TOOL_ROUNDS + 1
+    )
