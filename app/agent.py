@@ -11,6 +11,18 @@ from app.database import money_to_cents
 DEFAULT_MODEL = "gemini-2.5-flash"
 MAX_TOOL_ROUNDS = 3
 
+PRODUCT_CATEGORIES = [
+    "Baixos",
+    "Baterias e Percussão",
+    "Cordas Orquestrais",
+    "Guitarras",
+    "Instrumentos de Sopro (Madeiras)",
+    "Instrumentos de Sopro (Metais)",
+    "Teclados e Pianos",
+    "Ukuleles",
+    "Violões",
+]
+
 SYSTEM_INSTRUCTION = """
 Você é Amy, a assistente virtual do Empório da Música.
 
@@ -34,6 +46,10 @@ Nunca invente produtos, preços, disponibilidade, informações de pedidos ou
 regras. Se uma busca não encontrar informações suficientes, diga isso
 claramente. Não mencione ferramentas internas, SQL, arquivos ou detalhes da
 implementação ao cliente.
+
+Em resultados de busca, o campo count representa a quantidade retornada, não
+necessariamente o total existente no catálogo. Apresente os itens como opções
+encontradas e não afirme que representam todos os produtos disponíveis.
 """.strip()
 
 
@@ -77,7 +93,12 @@ TOOL_DECLARATIONS = [
                 },
                 "category": {
                     "type": "string",
-                    "description": "Product category requested by the user.",
+                    "enum": PRODUCT_CATEGORIES,
+                    "description": (
+                        "Canonical catalog category. Convert the customer's "
+                        "natural wording, regional term, singular, or plural "
+                        "into the closest category from this list."
+                    ),
                 },
                 "maximum_price_brl": {
                     "type": "number",
@@ -88,7 +109,9 @@ TOOL_DECLARATIONS = [
                 "limit": {
                     "type": "integer",
                     "description": (
-                        "Maximum number of products to return, from 1 to 10."
+                        "Number of products to return, from 1 to 10. "
+                        "Use 10 when the customer explicitly asks to see "
+                        "all matching options; otherwise omit this field."
                     ),
                 },
             },

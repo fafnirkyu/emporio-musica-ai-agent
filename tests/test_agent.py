@@ -5,6 +5,7 @@ import pytest
 
 from app.agent import (
     MAX_TOOL_ROUNDS,
+    PRODUCT_CATEGORIES,
     TOOL_DECLARATIONS,
     StoreAgent,
     ToolDispatcher,
@@ -307,3 +308,27 @@ def test_keeps_gemini_client_alive(dispatcher):
     )
 
     assert agent.client is client
+
+
+def test_declared_categories_match_database(database):
+    database_categories = [
+        row["name"]
+        for row in database.execute(
+            "SELECT name FROM categories ORDER BY name"
+        ).fetchall()
+    ]
+
+    search_declaration = next(
+        declaration
+        for declaration in TOOL_DECLARATIONS
+        if declaration.name == "search_products"
+    )
+
+    category_schema = (
+        search_declaration.parameters_json_schema[
+            "properties"
+        ]["category"]
+    )
+
+    assert PRODUCT_CATEGORIES == database_categories
+    assert category_schema["enum"] == PRODUCT_CATEGORIES
