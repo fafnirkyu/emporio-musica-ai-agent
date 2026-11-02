@@ -52,6 +52,12 @@ Structured facts such as prices, stock quantities, promotions, and order status 
 
 Gemini 2.5 Flash provides multilingual function calling with low latency and a free development tier. The model is configurable through `GEMINI_MODEL`, so another compatible Gemini model can be selected without changing the application code.
 
+### Prompt strategy
+
+The system instruction gives Amy a clear persona, Brazilian Portuguese response style, and a limited customer-service scope. It directs the model to use structured tools for prices, stock, promotions, and orders, while store rules must come from the policy retriever. The prompt also tells Amy not to invent missing information or expose internal implementation details.
+
+Business invariants are not left to prose alone. Tool schemas constrain catalog categories, application code allowlists tool names and limits tool-call rounds, and structured result fields distinguish purchase dates, estimated delivery dates, and actual delivery dates. Order verification remains outside the model context. The model temperature is set to `0.2` to favor consistent, grounded answers while preserving natural conversation.
+
 ### In-memory SQLite
 
 The supplied CSV files are loaded into a fresh in-memory SQLite database at startup. The dataset is small and read-only, so rebuilding it keeps setup simple and avoids committing a generated database file. SQLite foreign-key checks are enabled, and monetary values are stored as integer cents to avoid floating-point rounding errors.

@@ -84,10 +84,9 @@ TOOL_DECLARATIONS = [
     types.FunctionDeclaration(
         name="search_products",
         description=(
-            "Retrieves the status and details of an existing order. Call this "
-            "tool immediately when the customer asks about an order and has "
-            "provided its numeric identifier. The application collects the "
-            "verification email locally; never ask Gemini for the email."
+            "Searches the product catalog by name, type, description, category, "
+            "and maximum price. Use this tool for product recommendations, "
+            "availability questions, and price-filtered searches."
         ),
         parameters_json_schema={
             "type": "object",
