@@ -212,7 +212,7 @@ def get_order_status(connection, order_id, email):
         "verified": True,
         "order": {
             "order_id": order["order_id"],
-            "order_date": order["order_date"],
+            "purchase_date": order["order_date"],
             "status": order["status"],
             "status_label": ORDER_STATUS_LABELS.get(
                 order["status"],
@@ -222,7 +222,10 @@ def get_order_status(connection, order_id, email):
             "total_brl": format_brl(order["total_cents"]),
             "payment_method": order["payment_method"],
             "tracking_code": order["tracking_code"],
-            "estimated_delivery": order["estimated_delivery"],
+            "estimated_delivery_date": order[
+                "estimated_delivery"
+            ],
+            "actual_delivery_date": None,
             "notes": order["notes"],
             "items": [
                 {

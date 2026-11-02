@@ -125,6 +125,13 @@ def test_returns_order_for_matching_email(database):
     assert result["order"]["total_cents"] == 79990
     assert result["order"]["total_brl"] == "R$ 799,90"
     assert result["order"]["items"]
+    assert result["order"]["purchase_date"] == "2025-12-10"
+    assert (
+        result["order"]["estimated_delivery_date"]
+        == "2025-12-22"
+    )
+    assert result["order"]["actual_delivery_date"] is None
+    assert "order_date" not in result["order"]
 
 
 def test_hides_whether_an_order_exists(database):

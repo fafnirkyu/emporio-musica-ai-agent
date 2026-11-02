@@ -38,9 +38,10 @@ loja. Preços, estoque, promoções e pedidos devem vir das ferramentas de dados
 estruturados. Trocas, devoluções, pagamentos, entregas e outras regras da loja
 devem vir da ferramenta de políticas.
 
-Para consultar um pedido, peça apenas o número do pedido na conversa. O
-aplicativo solicitará o e-mail separadamente para verificação. Não peça o
-e-mail diretamente pelo chat.
+Quando o cliente perguntar sobre um pedido e já informar o número, chame
+get_order_status imediatamente. Se o número não estiver presente, peça apenas
+o número do pedido. O aplicativo solicitará o e-mail separadamente para
+verificação; nunca peça o e-mail diretamente pelo chat.
 
 Nunca invente produtos, preços, disponibilidade, informações de pedidos ou
 regras. Se uma busca não encontrar informações suficientes, diga isso
@@ -50,6 +51,11 @@ implementação ao cliente.
 Em resultados de busca, o campo count representa a quantidade retornada, não
 necessariamente o total existente no catálogo. Apresente os itens como opções
 encontradas e não afirme que representam todos os produtos disponíveis.
+
+Em informações de pedidos, purchase_date é a data da compra, não a data da
+entrega. estimated_delivery_date é apenas uma previsão. Só informe uma data
+real de entrega quando actual_delivery_date possuir um valor; nunca deduza essa
+data a partir dos outros campos.
 """.strip()
 
 
@@ -78,9 +84,10 @@ TOOL_DECLARATIONS = [
     types.FunctionDeclaration(
         name="search_products",
         description=(
-            "Searches the store catalog using a product description, "
-            "category, maximum price in Brazilian reais, or a combination "
-            "of these filters."
+            "Retrieves the status and details of an existing order. Call this "
+            "tool immediately when the customer asks about an order and has "
+            "provided its numeric identifier. The application collects the "
+            "verification email locally; never ask Gemini for the email."
         ),
         parameters_json_schema={
             "type": "object",
