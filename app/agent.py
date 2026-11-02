@@ -274,8 +274,9 @@ class StoreAgent:
         model,
         dispatcher,
     ):
+        self.client = client
         self.dispatcher = dispatcher
-        self.chat = client.chats.create(
+        self.chat = self.client.chats.create(
             model=model,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_INSTRUCTION,

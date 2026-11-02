@@ -294,3 +294,16 @@ def test_stops_repeated_tool_calls(dispatcher):
     assert chat.send_message.call_count == (
         MAX_TOOL_ROUNDS + 1
     )
+
+
+def test_keeps_gemini_client_alive(dispatcher):
+    client = Mock()
+    client.chats.create.return_value = Mock()
+
+    agent = StoreAgent(
+        client=client,
+        model="test-model",
+        dispatcher=dispatcher,
+    )
+
+    assert agent.client is client
