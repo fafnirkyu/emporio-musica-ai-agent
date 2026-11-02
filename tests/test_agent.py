@@ -45,6 +45,17 @@ def test_declared_tools_match_dispatcher(dispatcher):
     assert declared_tools == set(dispatcher.handlers)
 
 
+def test_search_products_declaration_describes_catalog():
+    declaration = next(
+        declaration
+        for declaration in TOOL_DECLARATIONS
+        if declaration.name == "search_products"
+    )
+
+    assert "product catalog" in declaration.description
+    assert "existing order" not in declaration.description
+
+
 def test_converts_maximum_price_to_cents(dispatcher):
     result = dispatcher.execute(
         "search_products",
